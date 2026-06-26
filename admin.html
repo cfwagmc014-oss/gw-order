@@ -248,10 +248,10 @@ tr:hover td{background:#FAFBFC}
 
 <script>
 const CAT_COLORS={'ผักและผลไม้':'#1D9E75','ของสด':'#BA7517','แช่แข็ง':'#185FA5','เครื่องปรุง':'#7F77DD','เครื่องดื่ม':'#D4537E','เส้น':'#D85A30','ของใช้':'#888780','ขนม':'#E24B4A'};
-let API='https://script.google.com/macros/s/AKfycbxi6XRDZLr3TvCsmQ7H0aEDQul_z79W4uevXzwLtiYjTvd15muDgnKxXnBqGhacBQGO/exec', allProds=[], allShops=[], allOrders=[], imgList=[], curShopId=null, curOrdId=null;
+let API='https://script.google.com/macros/s/AKfycbwir3zh3yHZta9JFSfM7dvpm2P9gzAIirbU3-6rFqS1-FY4hSLH9daYsTWvvRwKoCCF/exec', allProds=[], allShops=[], allOrders=[], imgList=[], curShopId=null, curOrdId=null;
 
 window.onload=()=>{
-  const saved=localStorage.getItem('gw_api')||'https://script.google.com/macros/s/AKfycbxi6XRDZLr3TvCsmQ7H0aEDQul_z79W4uevXzwLtiYjTvd15muDgnKxXnBqGhacBQGO/exec';
+  const saved=localStorage.getItem('gw_api')||'https://script.google.com/macros/s/AKfycbwir3zh3yHZta9JFSfM7dvpm2P9gzAIirbU3-6rFqS1-FY4hSLH9daYsTWvvRwKoCCF/exec';
   document.getElementById('api-inp').value=saved; API=saved;
 };
 
