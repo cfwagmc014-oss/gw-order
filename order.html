@@ -9,7 +9,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Noto Sans Thai','Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--t);font-size:15px;min-height:100vh}
 /* TOPBAR */
-.topbar{background:var(--g);color:#fff;padding:0 14px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.topbar{background:var(--g);color:#fff;padding:0 14px;height:50px;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .topbar-left{display:flex;align-items:center;gap:10px}
 .shop-name{font-size:15px;font-weight:700}
 .shop-sub{font-size:11px;opacity:.8}
@@ -18,11 +18,11 @@ body{font-family:'Noto Sans Thai','Segoe UI',Arial,sans-serif;background:var(--b
 .cart-fab.hidden{display:none}
 .cart-badge{background:#fff;color:var(--g);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
 /* SEARCH & CATS */
-.search-box{padding:8px 14px 6px;background:var(--s);border-bottom:1px solid var(--b);position:sticky;top:56px;z-index:40}
+.search-box{padding:7px 14px 5px;background:var(--s);border-bottom:1px solid var(--b);position:sticky;top:50px;z-index:40}
 .search-inp{width:100%;padding:8px 12px 8px 34px;border:1.5px solid var(--b);border-radius:25px;font-size:13px;font-family:inherit;background:var(--bg);outline:none;color:var(--t)}
 .search-inp:focus{border-color:var(--g);background:#fff}
 .search-ic{position:absolute;left:28px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:16px}
-.cats{display:flex;gap:6px;overflow-x:auto;padding:7px 14px;background:var(--s);border-bottom:1px solid var(--b);scrollbar-width:none;position:sticky;top:calc(56px + 52px);z-index:39}
+.cats{display:flex;gap:6px;overflow-x:auto;padding:6px 14px;background:var(--s);border-bottom:1px solid var(--b);scrollbar-width:none;position:sticky;top:calc(50px + 50px);z-index:39}
 .cats::-webkit-scrollbar{display:none}
 .cp{padding:4px 12px;border-radius:20px;border:1.5px solid var(--b);background:var(--s);font-size:12px;font-weight:600;color:var(--t2);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .12s}
 .cp.on{background:var(--g);color:#fff;border-color:var(--g)}
@@ -67,7 +67,7 @@ body{font-family:'Noto Sans Thai','Segoe UI',Arial,sans-serif;background:var(--b
 .cart-items{padding:0 18px}
 .ci{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b)}
 .ci:last-child{border-bottom:none}
-.ci-img{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#f0f0f0;flex-shrink:0}
+.ci-img{display:none}
 .ci-img-ph{width:44px;height:44px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .ci-inf{flex:1;min-width:0}
 .ci-nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -133,9 +133,8 @@ body{font-family:'Noto Sans Thai','Segoe UI',Arial,sans-serif;background:var(--b
   <div class="grid" id="grid"></div>
 
   <button class="cart-fab hidden" id="cart-fab" onclick="openCart()">
-    🛒 ดูตะกร้า
+    🛒 ดูรายการ
     <div class="cart-badge" id="fab-cnt">0</div>
-    <div style="font-size:12px;opacity:.9">฿<span id="fab-total">0</span></div>
   </button>
 </div>
 
@@ -192,7 +191,7 @@ body{font-family:'Noto Sans Thai','Segoe UI',Arial,sans-serif;background:var(--b
 const API_URL = 'https://script.google.com/macros/s/AKfycby03tcfYljZFpC08cXSoZLNpyaVGn0iFrwgDCeSGm7AAnDG3eQYgXA4oTvqSMXgHVSK/exec';
 const CAT_COLORS={'ผักและผลไม้':'#1D9E75','ของสด':'#BA7517','แช่แข็ง':'#185FA5','เครื่องปรุง':'#7F77DD','เครื่องดื่ม':'#D4537E','เส้น':'#D85A30','ของใช้':'#888780','ขนม':'#E24B4A'};
 
-let shopData=null, products=[], cart={}, activeCat='ทั้งหมด';
+let shopData=null, products=[], cart={}, itemNotes={}, activeCat='ทั้งหมด';
 
 // Get shopId from URL ?shop=xxx
 const shopId = new URLSearchParams(location.search).get('shop');
@@ -274,6 +273,10 @@ function renderGrid() {
   });
 }
 
+function setNote(id,val){
+  if(val.trim()) itemNotes[id]=val.trim();
+  else delete itemNotes[id];
+}
 function cq(id,d){const c=Number(cart[id])||0,n=Math.max(0,c+d);n?cart[id]=n:delete cart[id];updateCard(id);updateFab();}
 function sq(id,v){const n=Math.max(0,parseInt(v)||0);n?cart[id]=n:delete cart[id];updateCard(id);updateFab();}
 
@@ -295,7 +298,6 @@ function updateFab(){
   if(cnt>0){
     fab.classList.remove('hidden');
     document.getElementById('fab-cnt').textContent=cnt;
-    document.getElementById('fab-total').textContent=tot.toLocaleString();
   } else fab.classList.add('hidden');
 }
 
@@ -321,16 +323,19 @@ function renderCartItems(){
     const imgHtml = p.imageUrl
       ? `<img class="ci-img" src="${p.imageUrl}" alt="${p.name}" onerror="this.style.display='none'">`
       : `<div class="ci-img-ph">🛒</div>`;
-    r.innerHTML=`${imgHtml}
+    const iNote = itemNotes[String(p.id)]||'';
+    r.innerHTML=`
       <div class="ci-inf">
-        <div class="ci-nm">${p.name}</div>
-        <div class="ci-mt">${v} ${p.unit} × ${Number(p.price).toLocaleString()} ฿</div>
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:1px">
+          ${p.code?`<span style="font-size:9px;color:var(--t3);font-family:monospace">#${p.code}</span>`:''}
+          <div class="ci-nm">${p.name}</div>
+        </div>
+        <div class="ci-mt">จำนวน <b>${v}</b>${iNote?' · '+iNote:''}</div>
       </div>
-      <div class="ci-sub">${sub.toLocaleString()} ฿</div>
       <button class="ci-del" onclick="delItem('${p.id}')">✕</button>`;
     ci.appendChild(r);
   });
-  document.getElementById('sheet-total').textContent=tot.toLocaleString();
+  document.getElementById('sheet-total').textContent=items.length;
 }
 
 function delItem(id){delete cart[id];updateCard(id);updateFab();renderCartItems();}
@@ -345,7 +350,7 @@ async function submitOrder(){
   btn.disabled=true; btn.textContent='⏳ กำลังส่ง...';
   const orderItems=items.map(([k,v])=>{
     const p=products.find(x=>String(x.id)===String(k));
-    return p?{id:p.id,code:p.code||'',name:p.name,unit:p.unit,price:Number(p.price),qty:v,subtotal:Number(p.price)*v}:null;
+    return p?{id:p.id,code:p.code||'',name:p.name,unit:p.unit||'',price:Number(p.price)||0,qty:v,subtotal:0,note:itemNotes[p.id]||''}:null;
   }).filter(Boolean);
   const total=orderItems.reduce((s,i)=>s+i.subtotal,0);
   try {
@@ -358,7 +363,7 @@ async function submitOrder(){
       document.getElementById('success-pg').style.display='flex';
       document.getElementById('suc-ord').textContent=data.orderId;
       _lastOrder = {orderId:data.orderId, shopName:shopData.name, note:contact+(document.getElementById('f-note').value?' | '+document.getElementById('f-note').value:''), deliveryDate:document.getElementById('f-date').value, total, items:orderItems};
-      document.getElementById('suc-detail').innerHTML=`ร้าน: <b>${shopData.name}</b><br>ผู้ติดต่อ: <b>${contact}</b><br>โทร: ${tel||'—'}<br>รับวันที่: ${document.getElementById('f-date').value||'—'}<br><br>ทีมงานจะติดต่อกลับเพื่อยืนยันออร์เดอร์ค่ะ 🙏`;
+      document.getElementById('suc-detail').innerHTML=`ร้าน: <b>${shopData.name}</b><br>ผู้ติดต่อ: <b>${contact}</b><br>รับวันที่: ${document.getElementById('f-date').value||'—'}<br><br>ทีมงานจะติดต่อกลับเพื่อยืนยันออร์เดอร์ค่ะ 🙏`;
       cart={};
     } else showToast('เกิดข้อผิดพลาด: '+(data.error||'ลองใหม่อีกครั้งค่ะ'));
   } catch(e){ showToast('ส่งออร์เดอร์ไม่ได้: '+e.message); }
@@ -384,7 +389,7 @@ function sendLine() {
   msg += `📋 เลขออร์เดอร์: ${o.orderId}\n`;
   msg += '──────────────────\n';
   o.items.forEach(i => {
-    msg += `• ${i.name}${i.code?' (#'+i.code+')':''} x${i.qty} ${i.unit} = ${Number(i.subtotal).toLocaleString()} ฿\n`;
+    msg += `• ${i.name}${i.code?' (#'+i.code+')':''}  จำนวน ${i.qty}${i.note?' ('+i.note+')':''}\n`;
   });
   msg += '──────────────────\n';
   msg += `💰 ยอดรวม: ${Number(o.total).toLocaleString()} ฿`;
@@ -413,6 +418,7 @@ function closeLineModal() {
 }
 
 function resetOrder(){
+  itemNotes={};
   document.getElementById('success-pg').style.display='none';
   document.getElementById('main-pg').style.display='block';
   renderGrid(); updateFab();
