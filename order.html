@@ -339,12 +339,8 @@ async function submitOrder(){
   }).filter(Boolean);
   const total=orderItems.reduce((s,i)=>s+i.subtotal,0);
   try {
-    const res = await fetch(API_URL+'?body='+encodeURIComponent(JSON.stringify({
-      action:'saveOrder',shopId,shopName:shopData.name,
-      tel,deliveryDate:document.getElementById('f-date').value,
-      note:contact+(document.getElementById('f-note').value?' | '+document.getElementById('f-note').value:''),
-      total,items:orderItems
-    })});
+    const _payload = JSON.stringify({action:'saveOrder',shopId,shopName:shopData.name,tel,deliveryDate:document.getElementById('f-date').value,note:contact+(document.getElementById('f-note').value?' | '+document.getElementById('f-note').value:''),total,items:orderItems});
+    const res = await fetch(API_URL+'?body='+encodeURIComponent(_payload));
     const data=await res.json();
     if(data.ok){
       closeCart();
