@@ -194,11 +194,13 @@ const shopId = new URLSearchParams(location.search).get('shop');
 async function init() {
   if(!shopId){ showErr('ไม่พบรหัสร้านในลิงก์ค่ะ'); return; }
   try {
-    const res = await fetch(API_URL+'?action=getShop&shopId='+shopId);
+    const res = await fetch(API_URL+'?action=getShop&shopId='+shopId+'&_t='+Date.now());
     const data = await res.json();
     if(data.error||!data.shop){ showErr(data.error||'ไม่พบร้านนี้ในระบบ'); return; }
     shopData = data.shop;
-    products = data.products||[];
+    // Filter out header row and invalid products
+    products = (data.products||[]).filter(p=>p.name && p.name!=='ชื่อสินค้า *' && p.name!=='ชื่อสินค้า' && String(p.price)!=='0' || Number(p.price)>=0);
+    products = products.filter(p=>p.name && !p.name.includes('(Code)') && !p.name.includes('Category'));
     document.getElementById('loading-pg').style.display='none';
     document.getElementById('main-pg').style.display='block';
     document.getElementById('top-shop-name').textContent = shopData.name;
