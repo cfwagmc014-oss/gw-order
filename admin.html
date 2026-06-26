@@ -457,8 +457,12 @@ async function delProd(id,name){
 async function openSp(shopId,shopName){
   curShopId=shopId;document.getElementById('mo-sp-ti').textContent='⚙ สินค้าของ: '+shopName;
   document.getElementById('sp-s').value='';
-  const assigned=await api({action:'getShopProducts',shopId});
-  const ids=new Set((assigned||[]).map(p=>String(p.id)));
+  let assigned=[];
+  try{
+    const res=await api({action:'getShop',shopId});
+    assigned=(res&&res.products)?res.products:[];
+  }catch(e){assigned=[];}
+  const ids=new Set((Array.isArray(assigned)?assigned:[]).map(p=>String(p.id)));
   window._spIds=ids; renderSpList(); openM('mo-sp');
 }
 function renderSpList(){
@@ -659,9 +663,4 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
   </div>
   <div class="mo-ft">
     <button class="btn btn-o" onclick="closeM('mo-import')">ยกเลิก</button>
-    <button class="btn btn-r" id="btn-confirm-import" onclick="confirmImport()" disabled>⚠️ ยืนยัน Import (ลบของเดิม)</button>
-  </div>
-</div>
-</div>
-</body>
-</html>
+    <button class="btn btn-r" id="btn-confirm-import
