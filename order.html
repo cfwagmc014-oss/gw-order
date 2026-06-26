@@ -199,7 +199,7 @@ async function init() {
     if(data.error||!data.shop){ showErr(data.error||'ไม่พบร้านนี้ในระบบ'); return; }
     shopData = data.shop;
     // Filter out header row and invalid products
-    products = (data.products||[]).filter(p=>p.name && !p.name.includes('Code') && !p.name.includes('Category') && p.name!=='ชื่อสินค้า *');
+    products = (data.products||[]).filter(p=>p.name && p.name.length > 1);
     document.getElementById('loading-pg').style.display='none';
     document.getElementById('main-pg').style.display='block';
     document.getElementById('top-shop-name').textContent = shopData.name;
