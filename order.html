@@ -144,7 +144,13 @@ body{font-family:'Noto Sans Thai','Segoe UI',Arial,sans-serif;background:var(--b
   <div class="success-title">สั่งของเรียบร้อยแล้วค่ะ!</div>
   <div class="success-ord" id="suc-ord"></div>
   <div class="success-sub" id="suc-detail"></div>
-  <button onclick="resetOrder()" style="padding:12px 28px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">สั่งอีกครั้ง</button>
+  <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px">
+    <button onclick="sendLine()" style="padding:13px 28px;background:#06C755;color:#fff;border:none;border-radius:var(--r2);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 6.05 2 11.07c0 3.28 1.82 6.17 4.6 7.93L5.5 22l3.33-1.75c1 .28 2.07.43 3.17.43 5.52 0 10-4.05 10-9.07S17.52 2 12 2z"/></svg>
+      ส่งออร์เดอร์ทาง Line
+    </button>
+    <button onclick="resetOrder()" style="padding:12px 28px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">สั่งอีกครั้ง</button>
+  </div>
 </div>
 
 <!-- CART BOTTOM SHEET -->
@@ -248,13 +254,17 @@ function renderGrid() {
       : `<div class="pc-img-ph">🛒</div>`;
     d.innerHTML=`
       ${qty>0?'<div class="sel-dot"></div>':''}
-      ${imgHtml}
-      <div class="pc-body">
-        ${p.code?`<div class="pc-code"># ${p.code}</div>`:''}
-        <div class="pc-name">${p.name}</div>
-        <div class="pc-brand">${p.brand||'—'}</div>
-        <div class="pc-price">${Number(p.price).toLocaleString()} <span class="pc-unit">฿/${p.unit}</span></div>
-        <div class="pc-ctrl">
+      <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#f0f2f5;display:flex;align-items:center;justify-content:center;font-size:20px">${p.imageUrl?`<img src="${p.imageUrl}" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.style.display='none'">`:''}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <div style="font-size:13px;font-weight:700;color:var(--t);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
+          ${p.code?`<span style="font-size:9px;color:var(--t3);background:var(--bg);padding:1px 5px;border-radius:4px;flex-shrink:0">#${p.code}</span>`:''}
+        </div>
+        <div style="font-size:11px;color:var(--t3)">${p.cat}${p.brand?' · '+p.brand:''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        <div style="font-size:14px;font-weight:700;color:var(--g)">${Number(p.price).toLocaleString()} <span style="font-size:10px;color:var(--t3);font-weight:400">฿/${p.unit}</span></div>
+        <div style="display:flex;align-items:center;gap:4px">
           <button class="qb" onclick="cq('${p.id}',-1)">−</button>
           <input class="qi" type="number" min="0" value="${qty}" id="qi-${p.id}" onchange="sq('${p.id}',this.value)" />
           <button class="qb pl" onclick="cq('${p.id}',1)">+</button>
@@ -347,11 +357,59 @@ async function submitOrder(){
       document.getElementById('main-pg').style.display='none';
       document.getElementById('success-pg').style.display='flex';
       document.getElementById('suc-ord').textContent=data.orderId;
+      _lastOrder = {orderId:data.orderId, shopName:shopData.name, note:contact+(document.getElementById('f-note').value?' | '+document.getElementById('f-note').value:''), deliveryDate:document.getElementById('f-date').value, total, items:orderItems};
       document.getElementById('suc-detail').innerHTML=`ร้าน: <b>${shopData.name}</b><br>ผู้ติดต่อ: <b>${contact}</b><br>โทร: ${tel||'—'}<br>รับวันที่: ${document.getElementById('f-date').value||'—'}<br><br>ทีมงานจะติดต่อกลับเพื่อยืนยันออร์เดอร์ค่ะ 🙏`;
       cart={};
     } else showToast('เกิดข้อผิดพลาด: '+(data.error||'ลองใหม่อีกครั้งค่ะ'));
   } catch(e){ showToast('ส่งออร์เดอร์ไม่ได้: '+e.message); }
   btn.disabled=false; btn.textContent='✅ ยืนยันการสั่งสินค้า';
+}
+
+
+let _lastOrder = null;
+
+function sendLine() {
+  const modal = document.getElementById('modal-line');
+  modal.style.display = 'flex';
+  // Build message
+  if(!_lastOrder) return;
+  const o = _lastOrder;
+  const d = new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'numeric'});
+  let msg = '🛒 ใบสั่งสินค้า — Go Wholesale Rayong\n';
+  msg += '──────────────────\n';
+  msg += `🏪 ร้าน: ${o.shopName}\n`;
+  msg += `👤 ผู้ติดต่อ: ${o.note}\n`;
+  msg += `📅 รับวันที่: ${o.deliveryDate||'-'}\n`;
+  msg += `🗓 วันที่สั่ง: ${d}\n`;
+  msg += `📋 เลขออร์เดอร์: ${o.orderId}\n`;
+  msg += '──────────────────\n';
+  o.items.forEach(i => {
+    msg += `• ${i.name}${i.code?' (#'+i.code+')':''} x${i.qty} ${i.unit} = ${Number(i.subtotal).toLocaleString()} ฿\n`;
+  });
+  msg += '──────────────────\n';
+  msg += `💰 ยอดรวม: ${Number(o.total).toLocaleString()} ฿`;
+  document.getElementById('line-msg').textContent = msg;
+  window._lineMsg = msg;
+}
+
+function openLineApp() {
+  const msg = window._lineMsg || '';
+  const encoded = encodeURIComponent(msg);
+  // Try Line URL scheme first (works on mobile)
+  window.location.href = 'line://msg/text/'+encoded;
+  // Fallback: open Line share URL after delay
+  setTimeout(()=>{ window.open('https://line.me/R/msg/text/?'+encoded,'_blank'); }, 1000);
+}
+
+function copyLineMsg() {
+  const msg = window._lineMsg || document.getElementById('line-msg').textContent;
+  navigator.clipboard.writeText(msg)
+    .then(()=>{ showToast('✓ คัดลอกแล้วค่ะ วางใน Line ได้เลย'); closeLineModal(); })
+    .catch(()=>{ showToast('กรุณาคัดลอกข้อความด้วยตัวเองค่ะ'); });
+}
+
+function closeLineModal() {
+  document.getElementById('modal-line').style.display = 'none';
 }
 
 function resetOrder(){
@@ -365,5 +423,35 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 
 init();
 </script>
+
+<!-- Line Modal -->
+<div id="modal-line" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center">
+  <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:0 0 24px;animation:slideUp .25s ease" onclick="event.stopPropagation()">
+    <div style="width:40px;height:4px;background:#ddd;border-radius:2px;margin:12px auto 0"></div>
+    <div style="padding:14px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)">
+      <div style="font-size:15px;font-weight:700;color:#06C755;display:flex;align-items:center;gap:7px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#06C755"><path d="M12 2C6.48 2 2 6.05 2 11.07c0 3.28 1.82 6.17 4.6 7.93L5.5 22l3.33-1.75c1 .28 2.07.43 3.17.43 5.52 0 10-4.05 10-9.07S17.52 2 12 2z"/></svg>
+        ส่งออร์เดอร์ทาง Line
+      </div>
+      <button onclick="closeLineModal()" style="width:28px;height:28px;border:none;background:#f0f2f5;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666">✕</button>
+    </div>
+    <div style="padding:14px 18px">
+      <p style="font-size:12px;color:#888;margin-bottom:10px">เลือกวิธีส่งที่ต้องการค่ะ</p>
+      <!-- Option 1: Open Line directly -->
+      <button onclick="openLineApp()" style="width:100%;padding:13px;background:#06C755;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 6.05 2 11.07c0 3.28 1.82 6.17 4.6 7.93L5.5 22l3.33-1.75c1 .28 2.07.43 3.17.43 5.52 0 10-4.05 10-9.07S17.52 2 12 2z"/></svg>
+        เปิด Line แล้วส่งเลย (มือถือ)
+      </button>
+      <!-- Option 2: Copy text -->
+      <div style="background:#f0faf5;border:1px solid #b2dfc8;border-radius:8px;padding:12px;margin-bottom:10px">
+        <div style="font-size:11px;color:#0F6E56;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">ข้อความสำหรับส่ง</div>
+        <pre id="line-msg" style="font-size:11px;line-height:1.8;white-space:pre-wrap;font-family:monospace;color:#1a3a2a;max-height:200px;overflow-y:auto"></pre>
+      </div>
+      <button onclick="copyLineMsg()" style="width:100%;padding:12px;background:#fff;color:#06C755;border:2px solid #06C755;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
+        📋 คัดลอกข้อความ
+      </button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
