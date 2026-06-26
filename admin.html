@@ -74,6 +74,7 @@ tr:hover td{background:#FAFBFC}
 .toast.hid{display:none}
 .url-box{background:var(--bg);border:1px solid var(--b);border-radius:5px;padding:6px 10px;font-size:11px;font-family:monospace;word-break:break-all;color:var(--t2);display:flex;align-items:center;gap:7px;margin-top:5px}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -131,6 +132,8 @@ tr:hover td{background:#FAFBFC}
     <div style="display:flex;gap:8px;align-items:center">
       <input id="prod-s" placeholder="🔍 ค้นหา..." oninput="renderProds()" style="padding:6px 10px;border:1px solid var(--b);border-radius:6px;font-size:12px;font-family:inherit;outline:none;width:200px" />
       <button class="btn btn-g btn-sm" onclick="openAddProd()">+ เพิ่มสินค้า</button>
+      <button class="btn btn-o btn-sm" onclick="document.getElementById('import-file').click()">📥 Import Excel/CSV</button>
+      <input type="file" id="import-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importFile(this)" />
     </div>
   </div>
   <div class="card">
@@ -248,10 +251,10 @@ tr:hover td{background:#FAFBFC}
 
 <script>
 const CAT_COLORS={'ผักและผลไม้':'#1D9E75','ของสด':'#BA7517','แช่แข็ง':'#185FA5','เครื่องปรุง':'#7F77DD','เครื่องดื่ม':'#D4537E','เส้น':'#D85A30','ของใช้':'#888780','ขนม':'#E24B4A'};
-let API='https://script.google.com/macros/s/AKfycbwir3zh3yHZta9JFSfM7dvpm2P9gzAIirbU3-6rFqS1-FY4hSLH9daYsTWvvRwKoCCF/exec', allProds=[], allShops=[], allOrders=[], imgList=[], curShopId=null, curOrdId=null;
+let API='https://script.google.com/macros/s/AKfycbyiZtzQ4oWjlKkUkcdukhJibGVyNm_tPv5DuAcL1BEzDHtG8V6ACmgBwTT3u3OotGho/exec', allProds=[], allShops=[], allOrders=[], imgList=[], curShopId=null, curOrdId=null;
 
 window.onload=()=>{
-  const saved=localStorage.getItem('gw_api')||'https://script.google.com/macros/s/AKfycbwir3zh3yHZta9JFSfM7dvpm2P9gzAIirbU3-6rFqS1-FY4hSLH9daYsTWvvRwKoCCF/exec';
+  const saved=localStorage.getItem('gw_api')||'https://script.google.com/macros/s/AKfycbyiZtzQ4oWjlKkUkcdukhJibGVyNm_tPv5DuAcL1BEzDHtG8V6ACmgBwTT3u3OotGho/exec';
   document.getElementById('api-inp').value=saved; API=saved;
 };
 
@@ -512,10 +515,154 @@ async function updateStatus(){
   allOrders=await api({action:'getOrders'});renderOrders();renderDash();closeM('mo-ord');showToast('✓ อัปเดตสถานะแล้ว');
 }
 
+
+let importData = [];
+
+function importFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  
+  if (file.name.endsWith('.csv')) {
+    reader.onload = e => parseCSV(e.target.result);
+    reader.readAsText(file, 'UTF-8');
+  } else {
+    reader.onload = e => parseExcel(e.target.result);
+    reader.readAsArrayBuffer(file);
+  }
+  input.value = ''; // reset
+}
+
+function parseExcel(buffer) {
+  try {
+    const wb = XLSX.read(buffer, {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    processRows(rows);
+  } catch(e) { showToast('อ่านไฟล์ Excel ไม่ได้ค่ะ: ' + e.message); }
+}
+
+function parseCSV(text) {
+  try {
+    const rows = text.split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g,'')));
+    processRows(rows);
+  } catch(e) { showToast('อ่านไฟล์ CSV ไม่ได้ค่ะ: ' + e.message); }
+}
+
+function processRows(rows) {
+  if (!rows.length) { showToast('ไม่พบข้อมูลในไฟล์ค่ะ'); return; }
+  
+  // Skip header row if first cell is not a number or looks like header
+  let startRow = 0;
+  const first = String(rows[0][0]||'').toLowerCase();
+  if (first === 'รหัส' || first === 'รหัสสินค้า' || first === 'code' || first === 'id' || first === '') startRow = 1;
+  
+  importData = [];
+  for (let i = startRow; i < rows.length; i++) {
+    const r = rows[i];
+    const name = String(r[2]||'').trim();
+    if (!name) continue; // skip empty rows
+    importData.push({
+      code:  String(r[0]||'').trim(),
+      cat:   String(r[1]||'').trim() || 'ไม่ระบุหมวด',
+      name:  name,
+      brand: String(r[3]||'').trim(),
+      unit:  String(r[4]||'').trim() || 'หน่วย',
+      price: parseFloat(String(r[5]||'0').replace(/,/g,'')) || 0,
+    });
+  }
+  
+  if (!importData.length) { showToast('ไม่พบข้อมูลสินค้าในไฟล์ค่ะ กรุณาตรวจสอบรูปแบบ'); return; }
+  
+  // Show preview
+  document.getElementById('import-cnt').textContent = importData.length;
+  const preview = importData.slice(0, 10);
+  document.getElementById('import-tbody').innerHTML = preview.map(p =>
+    `<tr>
+      <td style="padding:5px 8px;border-bottom:1px solid var(--b);font-family:monospace;color:var(--t3)">${p.code||'—'}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid var(--b)">${p.cat}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid var(--b);font-weight:500">${p.name}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid var(--b);color:var(--t2)">${p.brand||'—'}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid var(--b);color:var(--t2)">${p.unit}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid var(--b);text-align:right;font-weight:600">฿${p.price.toLocaleString()}</td>
+    </tr>`
+  ).join('') + (importData.length > 10 ? `<tr><td colspan="6" style="padding:8px;text-align:center;color:var(--t3);font-size:11px">... และอีก ${importData.length - 10} รายการ</td></tr>` : '');
+  
+  document.getElementById('btn-confirm-import').disabled = false;
+  openM('mo-import');
+}
+
+async function confirmImport() {
+  if (!importData.length) return;
+  const btn = document.getElementById('btn-confirm-import');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลัง Import...';
+  
+  try {
+    // Send all products via GET body param
+    const res = await api({}, {
+      action: 'importProducts',
+      products: importData
+    });
+    
+    if (res.ok) {
+      closeM('mo-import');
+      allProds = await api({action:'getProducts'});
+      renderProds(); renderDash();
+      showToast(`✅ Import สำเร็จ ${importData.length} รายการค่ะ`);
+      importData = [];
+    } else {
+      showToast('Import ไม่สำเร็จ: ' + (res.error||'ลองใหม่อีกครั้งค่ะ'));
+    }
+  } catch(e) {
+    showToast('เกิดข้อผิดพลาด: ' + e.message);
+  }
+  
+  btn.disabled = false;
+  btn.textContent = '⚠️ ยืนยัน Import (ลบของเดิม)';
+}
+
 function openM(id){document.getElementById(id).classList.remove('hid');}
 function closeM(id){document.getElementById(id).classList.add('hid');}
 let _tt;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hid');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.add('hid'),2500);}
 </script>
+
+<!-- Import Modal -->
+<div class="ov hid" id="mo-import" onclick="closeM('mo-import')">
+<div class="mo" onclick="event.stopPropagation()" style="max-width:560px">
+  <div class="mo-hd"><div class="mo-ti">📥 Import สินค้าจากไฟล์</div><button class="mo-cl" onclick="closeM('mo-import')">✕</button></div>
+  <div class="mo-bd">
+    <div style="background:#FFF8E1;border:1px solid #FFD54F;border-radius:6px;padding:10px 14px;font-size:12px;color:#6D4C00;margin-bottom:14px;line-height:1.7">
+      ⚠️ การ Import จะ<b>ลบสินค้าทั้งหมดที่มีอยู่</b>แล้วแทนที่ด้วยข้อมูลใหม่ค่ะ<br>
+      กรุณาตรวจสอบข้อมูลก่อนกด "ยืนยัน Import"
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">รูปแบบไฟล์ที่รองรับ</div>
+    <div style="background:var(--bg);border-radius:6px;padding:10px 14px;font-size:12px;font-family:monospace;margin-bottom:14px;line-height:2">
+      คอลัมน์ที่ต้องมี (เรียงตามลำดับ):<br>
+      <b>A: รหัสสินค้า</b> | <b>B: หมวด</b> | <b>C: ชื่อสินค้า</b> | <b>D: แบรนด์</b> | <b>E: หน่วย</b> | <b>F: ราคา</b>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px">ตัวอย่างข้อมูล (<span id="import-cnt">0</span> รายการ)</div>
+    <div style="overflow-x:auto;border:1px solid var(--b);border-radius:6px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px" id="import-preview">
+        <thead><tr style="background:var(--bg)">
+          <th style="padding:6px 8px;border-bottom:1px solid var(--b);text-align:left">รหัส</th>
+          <th style="padding:6px 8px;border-bottom:1px solid var(--b);text-align:left">หมวด</th>
+          <th style="padding:6px 8px;border-bottom:1px solid var(--b);text-align:left">ชื่อสินค้า</th>
+          <th style="padding:6px 8px;border-bottom:1px solid var(--b);text-align:left">แบรนด์</th>
+          <th style="padding:6px 8px;border-bottom:1px solid var(--b);text-align:left">หน่วย</th>
+          <th style="padding:6px 8px;border-bottom:1px solid var(--b);text-align:right">ราคา</th>
+        </tr></thead>
+        <tbody id="import-tbody"><tr><td colspan="6" style="padding:12px;text-align:center;color:var(--t3)">ยังไม่มีข้อมูล</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="mo-ft">
+    <button class="btn btn-o" onclick="closeM('mo-import')">ยกเลิก</button>
+    <button class="btn btn-r" id="btn-confirm-import" onclick="confirmImport()" disabled>⚠️ ยืนยัน Import (ลบของเดิม)</button>
+  </div>
+</div>
+</div>
 </body>
 </html>
+
