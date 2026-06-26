@@ -257,8 +257,14 @@ window.onload=()=>{
 
 async function api(params,body){
   if(!API){showToast('ไม่มี API URL');throw new Error('No API');}
-  if(body){const r=await fetch(API,{method:'POST',body:JSON.stringify(body)});return r.json();}
-  const r=await fetch(API+'?'+new URLSearchParams(params));return r.json();
+  // Use GET with encoded body param to avoid CORS preflight
+  if(body){
+    const encoded = encodeURIComponent(JSON.stringify(body));
+    const r=await fetch(API+'?body='+encoded+'&_t='+Date.now());
+    return r.json();
+  }
+  const r=await fetch(API+'?'+new URLSearchParams(params)+'&_t='+Date.now());
+  return r.json();
 }
 
 async function doLogin(){

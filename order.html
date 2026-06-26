@@ -183,7 +183,7 @@ body{font-family:'Noto Sans Thai','Segoe UI',Arial,sans-serif;background:var(--b
 <div class="toast hid" id="toast"></div>
 
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbwxQx8kAkIHdUe9UOVWvXhAgRLBrzdRZp15ZirTwN-1BsPTaU2kuOIBtDgPKNGLep4c/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxi6XRDZLr3TvCsmQ7H0aEDQul_z79W4uevXzwLtiYjTvd15muDgnKxXnBqGhacBQGO/exec';
 const CAT_COLORS={'ผักและผลไม้':'#1D9E75','ของสด':'#BA7517','แช่แข็ง':'#185FA5','เครื่องปรุง':'#7F77DD','เครื่องดื่ม':'#D4537E','เส้น':'#D85A30','ของใช้':'#888780','ขนม':'#E24B4A'};
 
 let shopData=null, products=[], cart={}, activeCat='ทั้งหมด';
@@ -338,7 +338,7 @@ async function submitOrder(){
   }).filter(Boolean);
   const total=orderItems.reduce((s,i)=>s+i.subtotal,0);
   try {
-    const res=await fetch(API_URL,{method:'POST',body:JSON.stringify({
+    const res = await fetch(API_URL+'?body='+encodeURIComponent(JSON.stringify({
       action:'saveOrder',shopId,shopName:shopData.name,
       tel,deliveryDate:document.getElementById('f-date').value,
       note:contact+(document.getElementById('f-note').value?' | '+document.getElementById('f-note').value:''),
