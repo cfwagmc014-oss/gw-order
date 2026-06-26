@@ -248,11 +248,11 @@ tr:hover td{background:#FAFBFC}
 
 <script>
 const CAT_COLORS={'ผักและผลไม้':'#1D9E75','ของสด':'#BA7517','แช่แข็ง':'#185FA5','เครื่องปรุง':'#7F77DD','เครื่องดื่ม':'#D4537E','เส้น':'#D85A30','ของใช้':'#888780','ขนม':'#E24B4A'};
-let API='', allProds=[], allShops=[], allOrders=[], imgList=[], curShopId=null, curOrdId=null;
+let API='https://script.google.com/macros/s/AKfycbxi6XRDZLr3TvCsmQ7H0aEDQul_z79W4uevXzwLtiYjTvd15muDgnKxXnBqGhacBQGO/exec', allProds=[], allShops=[], allOrders=[], imgList=[], curShopId=null, curOrdId=null;
 
 window.onload=()=>{
-  const saved=localStorage.getItem('gw_api');
-  if(saved){document.getElementById('api-inp').value=saved; API=saved;}
+  const saved=localStorage.getItem('gw_api')||'https://script.google.com/macros/s/AKfycbxi6XRDZLr3TvCsmQ7H0aEDQul_z79W4uevXzwLtiYjTvd15muDgnKxXnBqGhacBQGO/exec';
+  document.getElementById('api-inp').value=saved; API=saved;
 };
 
 async function api(params,body){
